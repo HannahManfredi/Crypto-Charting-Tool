@@ -1,13 +1,17 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
+// import MyChart from './MyChart.jsx';
+import Chart from "chart.js";
 export default class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       loading: true,
       data: [],
-      chartData: []
+      currentYear: 0,
+      currentMonth: 0,
+      currentDay: 0
     };
   }
 
@@ -23,12 +27,44 @@ export default class App extends React.Component {
             };
             bpiList.push(item)
           }
+          let today = res.data.time.updated
+          let y = today.slice(10, 12)
+          let m = today.slice(0, 3)
+          let d = today.slice(4, 6)
           this.setState({
+            currentYear: y,
+            currentMonth: m,
+            currentDay: d,
             data: bpiList,
             loading: !this.state.loading
-          }), () => {
-            console.log('create graph w data')
-          }
+          }, () => {
+            const parsedData = this.state.data;
+            let months = ["Jan", "Feb", "March", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"]
+            let idx = months.indexOf(this.state.currentMonth)
+            let prices = []
+            let dates = [];
+            parsedData.forEach(item => {
+              dates.push(item.date)
+              prices.push(Math.floor(item.price))
+            })
+            const ctx = document.getElementById("myChart");
+            this.chart = new Chart(ctx, {
+              type: "line",
+              data: {
+                  labels: [`${months[(idx - 1)]} '${this.state.currentYear}, ${months[idx]} '${this.state.currentYear}`],
+                  datasets: [
+                      {
+                          label: "Dates",
+                          data: dates,
+                      },
+                      {
+                        label: "Prices",
+                        data: prices,
+                    }
+                  ]
+              }
+            });
+          })
         })
         .catch((err) => {
           throw err;
@@ -46,6 +82,9 @@ export default class App extends React.Component {
       return (
         <div>
           <h1>Crypto Charting Tool</h1>
+          <canvas id="myChart" width="400" height="400">
+
+          </canvas>
           <dl>
             <>
               {this.state.data.map((item, i) => (
@@ -56,6 +95,7 @@ export default class App extends React.Component {
               ))}
             </>
           </dl>
+          <span>Powered by CoinDesk</span>
         </div>
       );
     }
